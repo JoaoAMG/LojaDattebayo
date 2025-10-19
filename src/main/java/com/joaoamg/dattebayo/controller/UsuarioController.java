@@ -10,6 +10,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -23,6 +24,13 @@ public class UsuarioController {
         this.administradorService = administradorService;
     }
 
+
+    @QueryMapping
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR')")
+    public List<UsuarioCliente> clientes() {
+        return clienteService.buscarTodos();
+    }
+
     @QueryMapping
     @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR')")
     public UsuarioCliente clientePorEmail(@Argument String email) {
@@ -30,7 +38,7 @@ public class UsuarioController {
     }
 
     @MutationMapping
-    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or authentication.principal.id == #clienteInput.id")
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or hasPermission(#clienteInput, 'isOwner')")
     public UsuarioCliente atualizarCliente(@Argument("clienteInput") UsuarioCliente clienteInput) {
         return clienteService.atualizar(clienteInput);
     }
@@ -49,7 +57,7 @@ public class UsuarioController {
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('SUPER') or authentication.principal.id == #adminInput.id")
+    @PreAuthorize("hasAuthority('SUPER') or hasPermission(#adminInput, 'isOwner')")
     public UsuarioAdministrador atualizarAdministrador(@Argument("adminInput") UsuarioAdministrador adminInput) {
         return administradorService.atualizar(adminInput);
     }
@@ -61,4 +69,3 @@ public class UsuarioController {
         return id;
     }
 }
-

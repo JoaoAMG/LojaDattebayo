@@ -1,7 +1,10 @@
 package com.joaoamg.dattebayo.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
@@ -14,7 +17,7 @@ import java.util.UUID;
 public class Endereco {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column(nullable = false)
@@ -28,5 +31,6 @@ public class Endereco {
     private String cep;
 
     @Column(nullable = false)
+    @Builder.Default
     private String pais = "Brasil";
 }

@@ -1,10 +1,9 @@
 package com.joaoamg.dattebayo.config;
 
-import com.joaoamg.dattebayo.model.NivelAcesso;
-import com.joaoamg.dattebayo.model.Produto;
-import com.joaoamg.dattebayo.model.UsuarioAdministrador;
+import com.joaoamg.dattebayo.model.*;
 import com.joaoamg.dattebayo.repository.ProdutoRepository;
 import com.joaoamg.dattebayo.repository.UsuarioAdministradorRepository;
+import com.joaoamg.dattebayo.repository.UsuarioClienteRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,30 +12,48 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Classe de configuração para popular o banco de dados com dados iniciais .
- * Este código só será executado se o banco de dados estiver vazio.
- */
+
 @Configuration
 public class DataSeeder {
 
     @Bean
-    CommandLineRunner seedDatabase(ProdutoRepository produtoRepository,
-                                   UsuarioAdministradorRepository adminRepository,
-                                   PasswordEncoder passwordEncoder) {
+    CommandLineRunner seedDatabase(
+            ProdutoRepository produtoRepository,
+            UsuarioAdministradorRepository adminRepository,
+            UsuarioClienteRepository clienteRepository,
+            PasswordEncoder passwordEncoder) {
+
         return args -> {
 
-            if (produtoRepository.count() == 0 && adminRepository.count() == 0) {
+            if (adminRepository.count() == 0 && clienteRepository.count() == 0) {
                 System.out.println("Banco de dados vazio. Semeando dados iniciais...");
 
 
                 UsuarioAdministrador admin = new UsuarioAdministrador();
                 admin.setNome("Admin Padrão");
                 admin.setEmail("admin@dattebayo.com");
-                admin.setSenha(passwordEncoder.encode("admin123"));
+                admin.setSenha(passwordEncoder.encode("admin123")); // Senha é "admin123"
                 admin.setNivelAcesso(NivelAcesso.SUPER);
                 admin.setAtivo(true);
                 adminRepository.save(admin);
+
+
+                Endereco enderecoCliente = new Endereco();
+                enderecoCliente.setLogradouro("Rua das Cerejeiras");
+                enderecoCliente.setNumero("106");
+                enderecoCliente.setCidade("Konoha");
+                enderecoCliente.setEstado("País do Fogo");
+                enderecoCliente.setCep("12345-678");
+
+                UsuarioCliente cliente = new UsuarioCliente(
+                        "Sakura Haruno",
+                        "sakura@dattebayo.com",
+                        passwordEncoder.encode("senhaforte123"),
+                        "123.456.789-00",
+                        enderecoCliente
+                );
+                cliente.setAtivo(true);
+                clienteRepository.save(cliente);
 
 
                 Produto naruto1 = Produto.builder()
@@ -72,10 +89,9 @@ public class DataSeeder {
                         .descricao("A saga de Thriller Bark chega a um clímax emocionante com a luta contra o gigante Oars.")
                         .build();
 
-
                 produtoRepository.saveAll(List.of(naruto1, onepiece1, onepiece45));
 
-                System.out.println("Dados iniciais semeados com sucesso!");
+                System.out.println("Dados iniciais (Admin, Cliente e Produtos) semeados com sucesso!");
             } else {
                 System.out.println("O banco de dados já contém dados. A semeadura foi ignorada.");
             }

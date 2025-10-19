@@ -1,15 +1,15 @@
 package com.joaoamg.dattebayo.controller;
 
-import com.joaoamg.dattebayo.model.Pedido;
 import com.joaoamg.dattebayo.dto.ItemPedidoInputDTO;
 import com.joaoamg.dattebayo.dto.PedidoUpdateInputDTO;
-import com.joaoamg.dattebayo.service.PedidoService;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
+import com.joaoamg.dattebayo.model.Pedido;
+import com.joaoamg.dattebayo.service.PedidoService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.stereotype.Controller;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,8 +25,9 @@ public class PedidoController {
 
 
 
+
     @QueryMapping
-    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(#id)")
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(authentication, #id)")
     public Pedido pedido(@Argument UUID id) {
         return pedidoService.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido", "ID", id));
@@ -39,11 +40,10 @@ public class PedidoController {
     }
 
     @QueryMapping
-    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwnerOfUser(#usuarioId)")
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwnerOfUser(authentication, #usuarioId)")
     public List<Pedido> pedidosPorUsuario(@Argument UUID usuarioId) {
         return pedidoService.buscarPorUsuario(usuarioId);
     }
-
 
 
     @MutationMapping
@@ -52,38 +52,44 @@ public class PedidoController {
         return pedidoService.iniciarPedido(usuarioId);
     }
 
+
     @MutationMapping
-    @PreAuthorize("@pedidoPermissionEvaluator.isOwner(#pedidoId)")
+    @PreAuthorize("@pedidoPermissionEvaluator.isOwner(authentication, #pedidoId)")
     public Pedido adicionarItemAoPedido(@Argument UUID pedidoId, @Argument("itemInput") ItemPedidoInputDTO itemInput) {
         return pedidoService.adicionarItem(pedidoId, itemInput);
     }
 
+
     @MutationMapping
-    @PreAuthorize("@pedidoPermissionEvaluator.isOwnerByItemId(#itemPedidoId)")
+    @PreAuthorize("@pedidoPermissionEvaluator.isOwnerByItemId(authentication, #itemPedidoId)")
     public Pedido removerItemDoPedido(@Argument UUID itemPedidoId) {
         return pedidoService.removerItem(itemPedidoId);
     }
 
+
     @MutationMapping
-    @PreAuthorize("@pedidoPermissionEvaluator.isOwnerByItemId(#itemPedidoId)")
+    @PreAuthorize("@pedidoPermissionEvaluator.isOwnerByItemId(authentication, #itemPedidoId)")
     public Pedido atualizarItemDoPedido(@Argument UUID itemPedidoId, @Argument int quantidade) {
         return pedidoService.atualizarQuantidadeItem(itemPedidoId, quantidade);
     }
 
+
     @MutationMapping
-    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(#id)")
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(authentication, #id)")
     public Pedido atualizarPedido(@Argument UUID id, @Argument("pedidoInput") PedidoUpdateInputDTO pedidoInput) {
         return pedidoService.atualizar(id, pedidoInput);
     }
 
+
     @MutationMapping
-    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(#pedidoId)")
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(authentication, #pedidoId)")
     public Pedido confirmarPedido(@Argument UUID pedidoId) {
         return pedidoService.confirmarPedido(pedidoId);
     }
 
+
     @MutationMapping
-    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(#pedidoId)")
+    @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR') or @pedidoPermissionEvaluator.isOwner(authentication, #pedidoId)")
     public Pedido desfazerConfirmacao(@Argument UUID pedidoId) {
         return pedidoService.desfazerConfirmacao(pedidoId);
     }
