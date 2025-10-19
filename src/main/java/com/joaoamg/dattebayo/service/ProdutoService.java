@@ -4,6 +4,8 @@ import com.joaoamg.dattebayo.model.Produto;
 import com.joaoamg.dattebayo.repository.ProdutoRepository;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
@@ -17,12 +19,10 @@ public class ProdutoService {
         this.produtoRepository = produtoRepository;
     }
 
-
+    @Transactional
     public Produto criar(Produto produto) {
-
         return produtoRepository.save(produto);
     }
-
 
     public List<Produto> buscarTodos() {
         return produtoRepository.findAll();
@@ -33,23 +33,32 @@ public class ProdutoService {
     }
 
     public List<Produto> buscarPorGenero(String genero) {
-
         return produtoRepository.findByGenero(genero);
     }
 
 
-    public Produto atualizar(Produto produto) {
-        if (produto.getId() == null || !produtoRepository.existsById(produto.getId())) {
+    @Transactional
+    public Produto atualizar(UUID id, Produto produtoInput) {
+        Produto produtoExistente = produtoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto", "ID", id));
 
-            throw new ResourceNotFoundException("Produto", "ID", produto.getId());
-        }
-        return produtoRepository.save(produto);
+        produtoExistente.setNome(produtoInput.getNome());
+        produtoExistente.setNumeroDaEdicao(produtoInput.getNumeroDaEdicao());
+        produtoExistente.setAutor(produtoInput.getAutor());
+        produtoExistente.setEditora(produtoInput.getEditora());
+        produtoExistente.setGenero(produtoInput.getGenero());
+        produtoExistente.setAnoDeLancamento(produtoInput.getAnoDeLancamento());
+        produtoExistente.setValor(produtoInput.getValor());
+        produtoExistente.setTipo(produtoInput.getTipo());
+        produtoExistente.setImagemUrl(produtoInput.getImagemUrl());
+        produtoExistente.setDescricao(produtoInput.getDescricao());
+
+        return produtoRepository.save(produtoExistente);
     }
 
-
+    @Transactional
     public void deletar(UUID id) {
         if (!produtoRepository.existsById(id)) {
-
             throw new ResourceNotFoundException("Produto", "ID", id);
         }
         produtoRepository.deleteById(id);

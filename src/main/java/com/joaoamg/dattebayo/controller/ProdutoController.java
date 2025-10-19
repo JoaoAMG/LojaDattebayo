@@ -21,29 +21,24 @@ public class ProdutoController {
         this.produtoService = produtoService;
     }
 
-
-
-
     @QueryMapping
+    @PreAuthorize("permitAll") // Permitir que todos vejam os produtos
     public List<Produto> produtos() {
         return produtoService.buscarTodos();
     }
 
-
     @QueryMapping
+    @PreAuthorize("permitAll")
     public Produto produto(@Argument UUID id) {
         return produtoService.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto", "ID", id));
     }
 
-
     @QueryMapping
+    @PreAuthorize("permitAll")
     public List<Produto> produtosPorGenero(@Argument String genero) {
         return produtoService.buscarPorGenero(genero);
     }
-
-
-
 
     @MutationMapping
     @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR')")
@@ -51,13 +46,11 @@ public class ProdutoController {
         return produtoService.criar(produtoInput);
     }
 
-
     @MutationMapping
     @PreAuthorize("hasAnyAuthority('SUPER', 'MODERADOR')")
-    public Produto atualizarProduto(@Argument("produtoInput") Produto produtoInput) {
-        return produtoService.atualizar(produtoInput);
+    public Produto atualizarProduto(@Argument UUID id, @Argument("produtoInput") Produto produtoInput) {
+        return produtoService.atualizar(id, produtoInput);
     }
-
 
     @MutationMapping
     @PreAuthorize("hasAuthority('SUPER')")

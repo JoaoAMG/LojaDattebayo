@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 public class Produto {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column(nullable = false)
@@ -31,4 +31,11 @@ public class Produto {
     private Integer anoDeLancamento;
     private BigDecimal valor;
     private String tipo;
+
+
+    @Column(length = 1024)
+    private String imagemUrl;
+
+    @Column(length = 2048)
+    private String descricao;
 }

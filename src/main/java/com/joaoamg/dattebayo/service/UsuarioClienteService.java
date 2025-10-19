@@ -4,6 +4,7 @@ import com.joaoamg.dattebayo.model.UsuarioCliente;
 import com.joaoamg.dattebayo.repository.UsuarioClienteRepository;
 import com.joaoamg.dattebayo.erros.BusinessRuleException;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public class UsuarioClienteService {
         this.passwordEncoder = passwordEncoder;
     }
 
-
+    @Transactional
     public UsuarioCliente registrarCliente(UsuarioCliente cliente) {
         if (clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
 
@@ -35,7 +36,7 @@ public class UsuarioClienteService {
         return clienteRepository.save(cliente);
     }
 
-
+    @Transactional
     public UsuarioCliente buscarPorEmail(String email) {
         return clienteRepository.findByEmail(email)
 
@@ -46,7 +47,7 @@ public class UsuarioClienteService {
         return clienteRepository.findById(id);
     }
 
-
+    @Transactional
     public UsuarioCliente atualizar(UsuarioCliente cliente) {
         if (cliente.getId() == null) {
             throw new BusinessRuleException("ID do Cliente é obrigatório para atualização.");
@@ -67,7 +68,7 @@ public class UsuarioClienteService {
         return clienteRepository.save(cliente);
     }
 
-
+    @Transactional
     public void deletar(UUID id) {
         if (!clienteRepository.existsById(id)) {
 

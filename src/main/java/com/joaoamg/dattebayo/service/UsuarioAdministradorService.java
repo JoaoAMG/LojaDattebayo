@@ -4,6 +4,7 @@ import com.joaoamg.dattebayo.model.UsuarioAdministrador;
 import com.joaoamg.dattebayo.repository.UsuarioAdministradorRepository;
 import com.joaoamg.dattebayo.erros.BusinessRuleException;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
@@ -20,7 +21,7 @@ public class UsuarioAdministradorService {
         this.passwordEncoder = passwordEncoder;
     }
 
-
+    @Transactional
     public UsuarioAdministrador registrarAdministrador(UsuarioAdministrador admin) {
         if (administradorRepository.findByEmail(admin.getEmail()).isPresent()) {
 
@@ -32,7 +33,7 @@ public class UsuarioAdministradorService {
         return administradorRepository.save(admin);
     }
 
-
+    @Transactional
     public UsuarioAdministrador atualizar(UsuarioAdministrador admin) {
         if (admin.getId() == null) {
             throw new BusinessRuleException("ID do Administrador é obrigatório para atualização.");
@@ -53,7 +54,7 @@ public class UsuarioAdministradorService {
         return administradorRepository.save(admin);
     }
 
-
+    @Transactional
     public void deletar(UUID id) {
         if (!administradorRepository.existsById(id)) {
 

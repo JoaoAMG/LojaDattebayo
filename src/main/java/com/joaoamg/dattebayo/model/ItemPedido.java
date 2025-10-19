@@ -15,18 +15,27 @@ import java.util.UUID;
 public class ItemPedido {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pedido_id")
     private Pedido pedido;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "produto_id")
     private Produto produto;
 
     private Integer quantidade;
     private BigDecimal precoUnitario;
     private BigDecimal subTotal;
+
+
+    public void recalcularSubTotal() {
+        if (this.precoUnitario != null && this.quantidade != null) {
+            this.subTotal = this.precoUnitario.multiply(new BigDecimal(this.quantidade));
+        } else {
+            this.subTotal = BigDecimal.ZERO;
+        }
+    }
 }

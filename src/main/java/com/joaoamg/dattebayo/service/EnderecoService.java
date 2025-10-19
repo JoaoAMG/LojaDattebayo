@@ -3,6 +3,7 @@ package com.joaoamg.dattebayo.service;
 import com.joaoamg.dattebayo.model.Endereco;
 import com.joaoamg.dattebayo.repository.EnderecoRepository;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,21 +18,24 @@ public class EnderecoService {
         this.enderecoRepository = enderecoRepository;
     }
 
-    // --- CREATE ---
+
+    @Transactional
     public Endereco criar(Endereco endereco) {
         return enderecoRepository.save(endereco);
     }
 
-    // --- READ ---
+
+    @Transactional
     public Optional<Endereco> buscarPorId(UUID id) {
         return enderecoRepository.findById(id);
     }
-
+    @Transactional
     public List<Endereco> buscarTodos() {
         return enderecoRepository.findAll();
     }
 
-    // --- UPDATE ---
+
+    @Transactional
     public Endereco atualizar(Endereco endereco) {
         if (endereco.getId() == null || !enderecoRepository.existsById(endereco.getId())) {
             // ✅ Usando exceção customizada
@@ -40,7 +44,8 @@ public class EnderecoService {
         return enderecoRepository.save(endereco);
     }
 
-    // --- DELETE ---
+
+    @Transactional
     public void deletar(UUID id) {
         if (!enderecoRepository.existsById(id)) {
             // ✅ Usando exceção customizada

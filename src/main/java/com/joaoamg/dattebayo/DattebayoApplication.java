@@ -9,5 +9,5 @@ public class DattebayoApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(DattebayoApplication.class, args);
 	}
-
+	
 }
