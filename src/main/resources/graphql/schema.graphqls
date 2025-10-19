@@ -1,0 +1,257 @@
+# =================================================================
+# ARQUIVO DE SCHEMA GraphQL COMPLETO PARA A APLICAÇÃO DATTEBAYO
+# =================================================================
+
+# ========================================================
+# 1. ENUMS
+# ========================================================
+
+"Níveis de acesso para utilizadores administradores."
+enum NivelAcesso {
+    SUPER
+    MODERADOR
+    SUPORTE
+}
+
+"Status de um pedido, usado no padrão Memento."
+enum PedidoStatus {
+    NAO_EFETUADO
+    EFETUADO
+}
+
+"Meios de pagamento aceites para um pedido."
+enum MeioPagamento {
+    CARTAOCREDITO
+    CARTAODEBITO
+    PIX
+    BOLETO
+    DINHEIRO
+}
+
+# ========================================================
+# 2. TIPOS DE ENTRADA (INPUTS)
+# ========================================================
+
+"Input completo para criar ou atualizar um Endereço."
+input EnderecoInput {
+    logradouro: String!
+    numero: String
+    complemento: String
+    bairro: String
+    cidade: String
+    estado: String
+    cep: String
+    pais: String
+}
+
+"Input completo para registrar um novo Cliente."
+input ClienteInput {
+    nome: String!
+    email: String!
+    senha: String!
+    cpf: String
+    telefone: String
+    avatarUrl: String
+    endereco: EnderecoInput
+}
+
+"Input completo para registrar ou atualizar um Administrador."
+input AdminInput {
+    nome: String!
+    email: String!
+    senha: String!
+    nivelAcesso: NivelAcesso!
+    telefone: String
+    avatarUrl: String
+}
+
+"Input para autenticação (login)."
+input LoginInput {
+    email: String!
+    senha: String!
+    rememberMe: Boolean
+}
+
+"Input completo para criar ou atualizar um Produto."
+input ProdutoInput {
+    nome: String!
+    valor: Float!
+    descricao: String
+    imagemUrl: String
+    genero: String
+    autor: String
+    editora: String
+    anoDeLancamento: Int
+    numeroDaEdicao: Int
+    tipo: String
+}
+
+"Input para adicionar um item a um pedido."
+input ItemPedidoInput {
+    produtoId: ID!
+    quantidade: Int!
+}
+
+"Input para atualizar campos de um Pedido existente."
+input PedidoUpdateInput {
+    meioPagamento: MeioPagamento
+}
+
+
+# ========================================================
+# 3. TIPOS DE DADOS (OBJETOS DE SAÍDA)
+# ========================================================
+
+"Resposta de um login ou refresh de token."
+type TokenResponse {
+    accessToken: String!
+    refreshToken: String!
+}
+
+"Representa um endereço físico."
+type Endereco {
+    id: ID!
+    logradouro: String!
+    numero: String
+    complemento: String
+    bairro: String
+    cidade: String
+    estado: String
+    cep: String
+    pais: String!
+}
+
+"Interface com todos os campos comuns a qualquer tipo de utilizador."
+interface Usuario {
+    id: ID!
+    nome: String!
+    email: String!
+    ativo: Boolean
+    telefone: String
+    avatarUrl: String
+    emailVerificado: Boolean
+    dataCriacao: String
+    dataAtualizacao: String
+    ultimoLogin: String
+}
+
+"Representa um utilizador do tipo Cliente."
+type UsuarioCliente implements Usuario {
+    id: ID!
+    nome: String!
+    email: String!
+    ativo: Boolean
+    telefone: String
+    avatarUrl: String
+    emailVerificado: Boolean
+    dataCriacao: String
+    dataAtualizacao: String
+    ultimoLogin: String
+    cpf: String
+    endereco: Endereco
+}
+
+"Representa um utilizador do tipo Administrador."
+type UsuarioAdministrador implements Usuario {
+    id: ID!
+    nome: String!
+    email: String!
+    ativo: Boolean
+    telefone: String
+    avatarUrl: String
+    emailVerificado: Boolean
+    dataCriacao: String
+    dataAtualizacao: String
+    ultimoLogin: String
+    nivelAcesso: NivelAcesso
+}
+
+"Representa um produto da loja."
+type Produto {
+    id: ID!
+    nome: String!
+    valor: Float
+    descricao: String
+    imagemUrl: String
+    genero: String
+    autor: String
+    editora: String
+    anoDeLancamento: Int
+    numeroDaEdicao: Int
+    tipo: String
+}
+
+"Representa um item dentro de um pedido."
+type ItemPedido {
+    id: ID!
+    produto: Produto!
+    quantidade: Int!
+    precoUnitario: Float!
+    subTotal: Float!
+}
+
+"Representa um pedido de um cliente."
+type Pedido {
+    id: ID!
+    usuario: UsuarioCliente!
+    itens: [ItemPedido!]!
+    valorTotal: Float
+    dataPedido: String
+    status: PedidoStatus
+    meioPagamento: MeioPagamento
+}
+
+# ========================================================
+# 4. OPERAÇÕES DE LEITURA (QUERY)
+# ========================================================
+
+type Query {
+    # --- Utilizadores ---
+    clientes: [UsuarioCliente!]!
+    cliente(id: ID!): UsuarioCliente
+    administradores: [UsuarioAdministrador!]!
+    administrador(id: ID!): UsuarioAdministrador
+
+    # --- Produtos ---
+    produtos: [Produto!]!
+    produto(id: ID!): Produto
+    produtosPorGenero(genero: String!): [Produto!]!
+
+    # --- Pedidos ---
+    pedidos: [Pedido!]!
+    pedido(id: ID!): Pedido
+    pedidosPorUsuario(usuarioId: ID!): [Pedido!]!
+}
+
+# ========================================================
+# 5. OPERAÇÕES DE ESCRITA (MUTATION)
+# ========================================================
+
+type Mutation {
+    # --- Autenticação e Registo ---
+    registrarCliente(clienteInput: ClienteInput!): UsuarioCliente
+    registrarAdministrador(adminInput: AdminInput!): UsuarioAdministrador
+    login(loginInput: LoginInput!): TokenResponse
+    refreshToken(refreshToken: String!): TokenResponse
+
+    # --- Gestão de Utilizadores ---
+    atualizarCliente(id: ID!, clienteInput: ClienteInput!): UsuarioCliente
+    deletarCliente(id: ID!): ID
+    atualizarAdministrador(id: ID!, adminInput: AdminInput!): UsuarioAdministrador
+    deletarAdministrador(id: ID!): ID
+
+    # --- Gestão de Produtos ---
+    criarProduto(produtoInput: ProdutoInput!): Produto
+    atualizarProduto(id: ID!, produtoInput: ProdutoInput!): Produto
+    deletarProduto(id: ID!): ID
+
+    # --- Gestão de Pedidos ---
+    iniciarPedido(usuarioId: ID!): Pedido
+    adicionarItemAoPedido(pedidoId: ID!, itemInput: ItemPedidoInput!): Pedido
+    removerItemDoPedido(itemPedidoId: ID!): Pedido
+    atualizarItemDoPedido(itemPedidoId: ID!, quantidade: Int!): Pedido
+    atualizarPedido(id: ID!, pedidoInput: PedidoUpdateInput!): Pedido
+    confirmarPedido(pedidoId: ID!): Pedido
+    desfazerConfirmacao(pedidoId: ID!): Pedido
+    deletarPedido(id: ID!): ID
+}
