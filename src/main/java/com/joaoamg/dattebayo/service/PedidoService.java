@@ -1,10 +1,10 @@
 package com.joaoamg.dattebayo.service;
 
+import com.joaoamg.dattebayo.dto.ItemPedidoInputDTO;
+import com.joaoamg.dattebayo.dto.PedidoUpdateInputDTO;
 import com.joaoamg.dattebayo.erros.BusinessRuleException;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
 import com.joaoamg.dattebayo.model.*;
-import com.joaoamg.dattebayo.dto.ItemPedidoInputDTO;
-import com.joaoamg.dattebayo.dto.PedidoUpdateInputDTO;
 import com.joaoamg.dattebayo.model.memento.HistoricoPedido;
 import com.joaoamg.dattebayo.model.memento.PedidoStatus;
 import com.joaoamg.dattebayo.repository.*;
@@ -30,8 +30,6 @@ public class PedidoService {
         this.produtoRepository = produtoRepository;
         this.itemPedidoRepository = itemPedidoRepository;
     }
-
-
 
     @Transactional
     public Pedido iniciarPedido(UUID usuarioId) {
@@ -63,7 +61,6 @@ public class PedidoService {
         if (pedido.getStatus() == PedidoStatus.EFETUADO) {
             throw new BusinessRuleException("Não é possível adicionar itens a um pedido já efetuado.");
         }
-
 
         Optional<ItemPedido> itemExistente = pedido.getItens().stream()
                 .filter(item -> item.getProduto().getId().equals(produto.getId()))
@@ -126,7 +123,6 @@ public class PedidoService {
         return pedidoRepository.save(pedido);
     }
 
-
     @Transactional
     public Pedido atualizar(UUID id, PedidoUpdateInputDTO pedidoInput) {
         Pedido pedido = findPedidoById(id);
@@ -148,14 +144,13 @@ public class PedidoService {
         pedidoRepository.deleteById(id);
     }
 
-
     @Transactional
     public Pedido confirmarPedido(UUID pedidoId) {
         Pedido pedido = findPedidoById(pedidoId);
 
         HistoricoPedido historico = historicos.computeIfAbsent(pedidoId, k -> new HistoricoPedido(pedido));
 
-        if (pedido.getItens().isEmpty()){
+        if (pedido.getItens().isEmpty()) {
             throw new BusinessRuleException("Não é possível confirmar um pedido sem itens.");
         }
 
@@ -165,18 +160,22 @@ public class PedidoService {
         return pedidoRepository.save(pedido);
     }
 
+    /**
+     * ✅ LÓGICA CORRIGIDA: Agora salva o objeto Pedido correto, que foi modificado pelo Memento.
+     */
     @Transactional
     public Pedido desfazerConfirmacao(UUID pedidoId) {
-        Pedido pedido = findPedidoById(pedidoId);
         HistoricoPedido historico = historicos.get(pedidoId);
 
         if (historico != null && historico.desfazerOperacao()) {
-            return pedidoRepository.save(pedido);
+            // Pega o objeto Pedido que foi efetivamente modificado pelo Memento
+            Pedido pedidoModificado = historico.getPedido();
+            // Salva esse objeto no banco de dados
+            return pedidoRepository.save(pedidoModificado);
         } else {
             throw new BusinessRuleException("Não é possível desfazer a operação para este pedido.");
         }
     }
-
 
     public Optional<Pedido> buscarPorId(UUID id) {
         return pedidoRepository.findById(id);
@@ -189,7 +188,6 @@ public class PedidoService {
     public List<Pedido> buscarPorUsuario(UUID usuarioId) {
         return pedidoRepository.findByUsuarioId(usuarioId);
     }
-
 
     private Pedido findPedidoById(UUID id) {
         return pedidoRepository.findById(id)

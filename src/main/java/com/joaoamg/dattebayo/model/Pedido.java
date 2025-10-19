@@ -1,8 +1,12 @@
 package com.joaoamg.dattebayo.model;
-import com.joaoamg.dattebayo.model.memento.PedidoMemento; // Importar o Memento
+
+import com.joaoamg.dattebayo.model.memento.PedidoMemento;
 import com.joaoamg.dattebayo.model.memento.PedidoStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,10 +22,10 @@ import java.util.UUID;
 public class Pedido {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id")
     private UsuarioCliente usuario;
 
@@ -31,25 +35,25 @@ public class Pedido {
     private BigDecimal valorTotal;
     private LocalDateTime dataPedido;
 
-
     @Enumerated(EnumType.STRING)
     private PedidoStatus status;
 
-    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ItemPedido> itens;
 
 
-
-
     public PedidoMemento salvarEstado() {
-        return new PedidoMemento(this.status, this.valorTotal, this.dataPedido);
+        return PedidoMemento.builder()
+                .status(this.status)
+                .valorTotal(this.valorTotal)
+                .dataEstado(this.dataPedido)
+                .build();
     }
 
 
     public void restaurarEstado(PedidoMemento memento) {
         this.status = memento.getStatus();
         this.valorTotal = memento.getValorTotal();
-        this.dataPedido = memento.getDataPedido();
-
+        this.dataPedido = memento.getDataEstado();
     }
 }
