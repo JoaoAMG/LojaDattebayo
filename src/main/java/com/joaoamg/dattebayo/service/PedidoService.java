@@ -23,12 +23,16 @@ public class PedidoService {
     private final ProdutoRepository produtoRepository;
     private final ItemPedidoRepository itemPedidoRepository;
     private final Map<UUID, HistoricoPedido> historicos = new HashMap<>();
+    private final EmailService emailService;
 
-    public PedidoService(PedidoRepository pedidoRepository, UsuarioClienteRepository usuarioClienteRepository, ProdutoRepository produtoRepository, ItemPedidoRepository itemPedidoRepository) {
+    public PedidoService(PedidoRepository pedidoRepository, UsuarioClienteRepository usuarioClienteRepository,
+                         ProdutoRepository produtoRepository, ItemPedidoRepository itemPedidoRepository,
+                         EmailService emailService) {
         this.pedidoRepository = pedidoRepository;
         this.usuarioClienteRepository = usuarioClienteRepository;
         this.produtoRepository = produtoRepository;
         this.itemPedidoRepository = itemPedidoRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -45,7 +49,6 @@ public class PedidoService {
                 .build();
 
         Pedido pedidoSalvo = pedidoRepository.save(pedido);
-
         HistoricoPedido historico = new HistoricoPedido(pedidoSalvo);
         historicos.put(pedidoSalvo.getId(), historico);
 
@@ -147,7 +150,6 @@ public class PedidoService {
     @Transactional
     public Pedido confirmarPedido(UUID pedidoId) {
         Pedido pedido = findPedidoById(pedidoId);
-
         HistoricoPedido historico = historicos.computeIfAbsent(pedidoId, k -> new HistoricoPedido(pedido));
 
         if (pedido.getItens().isEmpty()) {
@@ -157,20 +159,19 @@ public class PedidoService {
         pedido.setStatus(PedidoStatus.EFETUADO);
         historico.salvarEstado();
 
-        return pedidoRepository.save(pedido);
+        Pedido pedidoConfirmado = pedidoRepository.save(pedido);
+
+        emailService.enviarEmailConfirmacao(pedidoConfirmado);
+
+        return pedidoConfirmado;
     }
 
-    /**
-     * ✅ LÓGICA CORRIGIDA: Agora salva o objeto Pedido correto, que foi modificado pelo Memento.
-     */
     @Transactional
     public Pedido desfazerConfirmacao(UUID pedidoId) {
         HistoricoPedido historico = historicos.get(pedidoId);
 
         if (historico != null && historico.desfazerOperacao()) {
-            // Pega o objeto Pedido que foi efetivamente modificado pelo Memento
             Pedido pedidoModificado = historico.getPedido();
-            // Salva esse objeto no banco de dados
             return pedidoRepository.save(pedidoModificado);
         } else {
             throw new BusinessRuleException("Não é possível desfazer a operação para este pedido.");
