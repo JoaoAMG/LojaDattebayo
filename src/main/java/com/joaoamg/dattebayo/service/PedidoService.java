@@ -5,7 +5,7 @@ import com.joaoamg.dattebayo.dto.PedidoUpdateInputDTO;
 import com.joaoamg.dattebayo.erros.BusinessRuleException;
 import com.joaoamg.dattebayo.erros.ResourceNotFoundException;
 import com.joaoamg.dattebayo.model.*;
-import com.joaoamg.dattebayo.model.memento.HistoricoPedido;
+import com.joaoamg.dattebayo.model.memento.PedidoMemento;
 import com.joaoamg.dattebayo.model.memento.PedidoStatus;
 import com.joaoamg.dattebayo.repository.*;
 import org.springframework.stereotype.Service;
@@ -13,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class PedidoService {
@@ -22,16 +25,17 @@ public class PedidoService {
     private final UsuarioClienteRepository usuarioClienteRepository;
     private final ProdutoRepository produtoRepository;
     private final ItemPedidoRepository itemPedidoRepository;
-    private final Map<UUID, HistoricoPedido> historicos = new HashMap<>();
+    private final PedidoMementoRepository mementoRepository;
     private final EmailService emailService;
 
     public PedidoService(PedidoRepository pedidoRepository, UsuarioClienteRepository usuarioClienteRepository,
                          ProdutoRepository produtoRepository, ItemPedidoRepository itemPedidoRepository,
-                         EmailService emailService) {
+                         PedidoMementoRepository mementoRepository, EmailService emailService) {
         this.pedidoRepository = pedidoRepository;
         this.usuarioClienteRepository = usuarioClienteRepository;
         this.produtoRepository = produtoRepository;
         this.itemPedidoRepository = itemPedidoRepository;
+        this.mementoRepository = mementoRepository;
         this.emailService = emailService;
     }
 
@@ -49,9 +53,7 @@ public class PedidoService {
                 .build();
 
         Pedido pedidoSalvo = pedidoRepository.save(pedido);
-        HistoricoPedido historico = new HistoricoPedido(pedidoSalvo);
-        historicos.put(pedidoSalvo.getId(), historico);
-
+        salvarEstado(pedidoSalvo);
         return pedidoSalvo;
     }
 
@@ -143,21 +145,21 @@ public class PedidoService {
         if (pedido.getStatus() == PedidoStatus.EFETUADO) {
             throw new BusinessRuleException("Não é possível deletar um pedido já efetuado.");
         }
-        historicos.remove(id);
+
+        mementoRepository.deleteAll(mementoRepository.findByPedidoIdOrderByDataEstadoDesc(id));
         pedidoRepository.deleteById(id);
     }
 
     @Transactional
     public Pedido confirmarPedido(UUID pedidoId) {
         Pedido pedido = findPedidoById(pedidoId);
-        HistoricoPedido historico = historicos.computeIfAbsent(pedidoId, k -> new HistoricoPedido(pedido));
 
         if (pedido.getItens().isEmpty()) {
             throw new BusinessRuleException("Não é possível confirmar um pedido sem itens.");
         }
 
         pedido.setStatus(PedidoStatus.EFETUADO);
-        historico.salvarEstado();
+        salvarEstado(pedido);
 
         Pedido pedidoConfirmado = pedidoRepository.save(pedido);
 
@@ -168,14 +170,32 @@ public class PedidoService {
 
     @Transactional
     public Pedido desfazerConfirmacao(UUID pedidoId) {
-        HistoricoPedido historico = historicos.get(pedidoId);
+        Pedido pedido = findPedidoById(pedidoId);
+        List<PedidoMemento> historico = mementoRepository.findByPedidoIdOrderByDataEstadoDesc(pedidoId);
 
-        if (historico != null && historico.desfazerOperacao()) {
-            Pedido pedidoModificado = historico.getPedido();
-            return pedidoRepository.save(pedidoModificado);
-        } else {
-            throw new BusinessRuleException("Não é possível desfazer a operação para este pedido.");
+        if (historico.size() < 2) {
+            throw new BusinessRuleException("Não é possível desfazer a operação para este pedido (sem histórico suficiente).");
         }
+
+        PedidoMemento estadoAtual = historico.get(0);
+        PedidoMemento estadoAnterior = historico.get(1);
+
+        pedido.restaurarEstado(estadoAnterior);
+
+        mementoRepository.delete(estadoAtual);
+
+        return pedidoRepository.save(pedido);
+    }
+
+    private void salvarEstado(Pedido pedido) {
+        PedidoMemento memento = PedidoMemento.builder()
+                .pedido(pedido)
+                .status(pedido.getStatus())
+                .valorTotal(pedido.getValorTotal())
+                .dataEstado(LocalDateTime.now())
+                .build();
+        mementoRepository.save(memento);
+        System.out.println("Estado do Pedido salvo no banco. Status: " + pedido.getStatus());
     }
 
     public Optional<Pedido> buscarPorId(UUID id) {
