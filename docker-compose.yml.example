@@ -13,10 +13,10 @@ services:
     image: postgres:16
     container_name: postgresql_db
     ports:
-      - "5433:5432"
+      - "5433:5432" # Porta local 5433, Porta do container 5432
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: <INSIRA_SUA_SENHA_DO_BANCO_AQUI> # Ex: password
       POSTGRES_DB: dattebayo
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -89,13 +89,15 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql_db:5432/dattebayo
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_PASSWORD: <INSIRA_A_SENHA_DO_BANCO_DEFINIDA_ACIMA>
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      # senha antiga
-      #JWT_SECRET: SUA_CHAVE_SECRETA_MUITO_LONGA_E_COMPLEXA_AQUI_PARA_ASSINATURA
-      JWT_SECRET: dW1hLWZyYXNlLXNlY3JldGEtbXVpdG8tZm9ydGUtZS1sb25nYS1wYXJhLW8tbWV1LXByb2pldG8tZGF0dGViYXlvLTIwMjU=
-    # ✅ CORREÇÃO: 'command' está agora no nível correto, fora do 'environment'.
-    command: sh -c "printenv && java -jar /app.jar"
+
+      # Chave secreta para JWT (deve ser uma string longa em Base64)
+      JWT_SECRET: <GERAR_UMA_CHAVE_BASE64_LONGA_E_ALEATORIA>
+
+      # Credenciais para envio de e-mail (ex: Gmail)
+      SPRING_MAIL_USERNAME: <SEU_EMAIL_AQUI@gmail.com>
+      SPRING_MAIL_PASSWORD: <SUA_SENHA_DE_APP_AQUI>
 
     networks:
       - dattebayo-network

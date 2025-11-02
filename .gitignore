@@ -1,4 +1,10 @@
-HELP.md
+# Ficheiros de configuração locais com segredos
+docker-compose.yml
+
+# Logs
+*.log
+
+# Ficheiros originais
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
