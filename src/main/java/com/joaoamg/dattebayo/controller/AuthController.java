@@ -4,10 +4,12 @@ import com.joaoamg.dattebayo.dto.LoginRequest;
 import com.joaoamg.dattebayo.dto.TokenResponse;
 import com.joaoamg.dattebayo.erros.BusinessRuleException;
 import com.joaoamg.dattebayo.model.Usuario;
+import com.joaoamg.dattebayo.model.UsuarioAdministrador;
 import com.joaoamg.dattebayo.model.UsuarioCliente;
+import com.joaoamg.dattebayo.repository.UsuarioAdministradorRepository;
+import com.joaoamg.dattebayo.repository.UsuarioClienteRepository;
 import com.joaoamg.dattebayo.service.JwtTokenService;
 import com.joaoamg.dattebayo.service.UsuarioClienteService;
-import com.joaoamg.dattebayo.service.UsuarioService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,23 +19,28 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 
+import java.time.LocalDateTime;
+
 @Controller
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenService jwtTokenService;
     private final UsuarioClienteService clienteService;
-    private final UsuarioService usuarioService;
+    private final UsuarioClienteRepository clienteRepository;
+    private final UsuarioAdministradorRepository administradorRepository;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             JwtTokenService jwtTokenService,
             UsuarioClienteService clienteService,
-            UsuarioService usuarioService) {
+            UsuarioClienteRepository clienteRepository,
+            UsuarioAdministradorRepository administradorRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenService = jwtTokenService;
         this.clienteService = clienteService;
-        this.usuarioService = usuarioService;
+        this.clienteRepository = clienteRepository;
+        this.administradorRepository = administradorRepository;
     }
 
     @MutationMapping
@@ -51,12 +58,16 @@ public class AuthController {
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
+        Usuario usuario = clienteRepository.findByEmail(userDetails.getUsername())
+                .<Usuario>map(c -> c)
+                .orElseGet(() -> administradorRepository.findByEmail(userDetails.getUsername())
+                        .orElseThrow(() -> new BusinessRuleException("Erro inesperado: Utilizador autenticado não encontrado.")));
 
-        Usuario usuario = usuarioService.findUsuarioByEmail(userDetails.getUsername());
-
-
-        if (usuario == null) {
-            throw new BusinessRuleException("Erro inesperado: Usuário autenticado mas não encontrado no banco de dados.");
+        usuario.setUltimoLogin(LocalDateTime.now());
+        if (usuario instanceof UsuarioCliente) {
+            clienteRepository.save((UsuarioCliente) usuario);
+        } else {
+            administradorRepository.save((UsuarioAdministrador) usuario);
         }
 
         String accessToken = jwtTokenService.generateAccessToken(usuario);
@@ -72,22 +83,6 @@ public class AuthController {
     @MutationMapping
     @PreAuthorize("permitAll")
     public TokenResponse refreshToken(@Argument String refreshToken) {
-        if (!jwtTokenService.isRefreshTokenValid(refreshToken)) {
-            throw new BusinessRuleException("Refresh token inválido ou expirado.");
-        }
-
-        String userEmail = jwtTokenService.extractUsername(refreshToken);
-        Usuario usuario = usuarioService.findUsuarioByEmail(userEmail);
-        if (usuario == null) {
-            throw new BusinessRuleException("Usuário associado ao refresh token não encontrado.");
-        }
-
-        String newAccessToken = jwtTokenService.generateAccessToken(usuario);
-
-        TokenResponse response = new TokenResponse();
-        response.setAccessToken(newAccessToken);
-        response.setRefreshToken(refreshToken);
-
-        return response;
+        throw new UnsupportedOperationException("A Mutation refreshToken precisa ser implementada.");
     }
 }
